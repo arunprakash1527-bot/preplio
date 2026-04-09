@@ -1,12 +1,32 @@
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 import { Sidebar } from "@/components/layout/sidebar"
 import { TopNav } from "@/components/layout/top-nav"
 import { MobileNav } from "@/components/layout/mobile-nav"
+import { OnboardingModal } from "@/components/shared/onboarding-modal"
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single()
+
+  const showOnboarding = profile && !profile.onboarding_completed
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
@@ -17,6 +37,12 @@ export default function DashboardLayout({
         </main>
       </div>
       <MobileNav />
+      {showOnboarding && (
+        <OnboardingModal
+          userId={user.id}
+          fullName={profile.full_name}
+        />
+      )}
     </div>
   )
 }
