@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Preplio Teal + Warm Gray Theme */
+  --background: 60 9% 98%;        /* stone-50: #FAFAF9 */
+  --foreground: 24 10% 10%;       /* stone-900: #1C1917 */
+  --card: 0 0% 100%;              /* white */
+  --card-foreground: 24 10% 10%;  /* stone-900 */
+  --popover: 0 0% 100%;
+  --popover-foreground: 24 10% 10%;
+  --primary: 175 84% 32%;         /* teal-600: #0D9488 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 60 5% 96%;         /* stone-100 */
+  --secondary-foreground: 24 10% 10%;
+  --muted: 60 5% 96%;
+  --muted-foreground: 25 6% 45%;  /* stone-500: #78716C */
+  --accent: 166 76% 97%;          /* teal-50 */
+  --accent-foreground: 176 69% 22%; /* teal-800: #115E59 */
+  --destructive: 0 84% 60%;       /* red-500 */
+  --destructive-foreground: 0 0% 100%;
+  --border: 20 6% 90%;            /* stone-200: #E7E5E4 */
+  --input: 20 6% 90%;
+  --ring: 175 84% 32%;            /* teal-600 */
+  --radius: 0.625rem;
+
+  /* Custom semantic tokens */
+  --success: 160 84% 39%;         /* emerald-600: #059669 */
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;          /* amber-600: #D97706 */
+  --warning-foreground: 0 0% 100%;
+  --primary-light: 166 76% 89%;   /* teal-100: #CCFBF1 */
+  --primary-dark: 176 69% 22%;    /* teal-800: #115E59 */
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-primary-light: hsl(var(--primary-light));
+  --color-primary-dark: hsl(var(--primary-dark));
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus visible outline */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
