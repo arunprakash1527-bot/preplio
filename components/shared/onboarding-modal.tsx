@@ -19,9 +19,6 @@ import {
   ChevronLeft,
   GraduationCap,
   BookOpen,
-  Clock,
-  FileCheck,
-  CheckCircle2,
 } from "lucide-react"
 
 interface OnboardingModalProps {
@@ -239,63 +236,31 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
                       setSelectedCertId(cert.id)
                       setStep(3)
                     }}
-                    className="flex w-full flex-col rounded-lg border-2 border-border p-4 text-left transition-all hover:border-primary hover:bg-primary/5 hover:shadow-sm"
+                    className="flex w-full items-center gap-4 rounded-lg border-2 border-border p-4 text-left transition-all hover:border-primary hover:bg-primary/5 hover:shadow-sm"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary mt-0.5">
-                        {isDesignation ? (
-                          <GraduationCap className="h-5 w-5" />
-                        ) : (
-                          <BookOpen className="h-5 w-5" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-semibold text-foreground">{cert.name}</p>
-                          {isDesignation && (
-                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                              Professional Title
-                            </span>
-                          )}
-                        </div>
-                        <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
-                          {cert.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Key facts */}
-                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 pl-[52px]">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                       {isDesignation ? (
-                        <>
-                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <FileCheck className="h-3.5 w-3.5" />2 exams (Part I + Part II)
-                          </span>
-                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Clock className="h-3.5 w-3.5" />
-                            110 questions, 4 hrs total
-                          </span>
-                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Experience required
-                          </span>
-                        </>
+                        <GraduationCap className="h-5 w-5" />
                       ) : (
-                        <>
-                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <FileCheck className="h-3.5 w-3.5" />1 exam
-                          </span>
-                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Clock className="h-3.5 w-3.5" />
-                            60 questions, 2 hrs
-                          </span>
-                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            No experience required
-                          </span>
-                        </>
+                        <BookOpen className="h-5 w-5" />
                       )}
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-foreground">{cert.name}</p>
+                        {isDesignation && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                            Pro
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-sm text-muted-foreground">
+                        {isDesignation
+                          ? "2 exams · 110 questions · Experience required"
+                          : "1 exam · 60 questions · No experience needed"}
+                      </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
                   </button>
                 )
               })}
