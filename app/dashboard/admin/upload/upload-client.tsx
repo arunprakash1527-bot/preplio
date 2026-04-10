@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Progress } from "@/components/ui/progress"
 import {
   Upload,
   FileText,
@@ -22,6 +21,8 @@ import {
   X,
   Loader2,
   CheckCircle2,
+  Video,
+  Image as ImageIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -36,47 +37,41 @@ interface UploadClientProps {
   defaultCertId: string | null
 }
 
-type UploadMode = "file" | "text" | null
+type UploadMode = "file" | "text" | "youtube" | "image" | null
 
 export function UploadClient({ certifications, defaultCertId }: UploadClientProps) {
   const [mode, setMode] = useState<UploadMode>(null)
   const [file, setFile] = useState<File | null>(null)
   const [pastedText, setPastedText] = useState("")
+  const [youtubeUrl, setYoutubeUrl] = useState("")
   const [title, setTitle] = useState("")
   const [certId, setCertId] = useState(defaultCertId ?? "")
   const [uploading, setUploading] = useState(false)
-  const [processing, setProcessing] = useState(false)
-  const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true)
-    } else if (e.type === "dragleave") {
-      setDragActive(false)
-    }
   }, [])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setDragActive(false)
-
     const droppedFile = e.dataTransfer.files[0]
     if (droppedFile) {
-      selectFile(droppedFile)
+      if (droppedFile.type.startsWith("image/")) {
+        selectImage(droppedFile)
+      } else {
+        selectFile(droppedFile)
+      }
     }
   }, [])
 
   function selectFile(f: File) {
-    const validTypes = [
-      "application/pdf",
-    ]
-    if (!validTypes.includes(f.type)) {
-      toast.error("Only PDF files are supported currently")
+    if (f.type !== "application/pdf") {
+      toast.error("Only PDF files are supported for document upload")
       return
     }
     if (f.size > 10 * 1024 * 1024) {
@@ -85,30 +80,36 @@ export function UploadClient({ certifications, defaultCertId }: UploadClientProp
     }
     setFile(f)
     setMode("file")
-    if (!title) {
-      // Auto-populate title from filename
-      setTitle(f.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "))
+    if (!title) setTitle(f.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "))
+  }
+
+  function selectImage(f: File) {
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    if (!validTypes.includes(f.type)) {
+      toast.error("Supported: JPEG, PNG, GIF, WebP")
+      return
     }
+    if (f.size > 10 * 1024 * 1024) {
+      toast.error("Image must be under 10MB")
+      return
+    }
+    setFile(f)
+    setMode("image")
+    if (!title) setTitle(f.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "))
   }
 
   function resetForm() {
     setMode(null)
     setFile(null)
     setPastedText("")
+    setYoutubeUrl("")
     setTitle("")
     setUploading(false)
-    setProcessing(false)
   }
 
   async function handleUpload() {
-    if (!title.trim()) {
-      toast.error("Please enter a title")
-      return
-    }
-    if (!certId) {
-      toast.error("Please select a certification")
-      return
-    }
+    if (!title.trim()) { toast.error("Please enter a title"); return }
+    if (!certId) { toast.error("Please select a certification"); return }
 
     setUploading(true)
 
@@ -120,9 +121,15 @@ export function UploadClient({ certifications, defaultCertId }: UploadClientProp
       if (mode === "file" && file) {
         formData.append("type", "pdf")
         formData.append("file", file)
+      } else if (mode === "image" && file) {
+        formData.append("type", "image")
+        formData.append("file", file)
       } else if (mode === "text" && pastedText.trim()) {
         formData.append("type", "text")
         formData.append("pastedText", pastedText)
+      } else if (mode === "youtube" && youtubeUrl.trim()) {
+        formData.append("type", "youtube")
+        formData.append("youtubeUrl", youtubeUrl.trim())
       } else {
         toast.error("No content to upload")
         setUploading(false)
@@ -137,148 +144,104 @@ export function UploadClient({ certifications, defaultCertId }: UploadClientProp
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Upload failed")
 
-      setUploading(false)
-
-      // If PDF, trigger processing
+      // PDF needs separate processing step
       if (mode === "file" && data.document?.status === "pending") {
-        setProcessing(true)
         toast.info("Processing PDF...")
-
         const processRes = await fetch(`/api/documents/${data.document.id}/process`, {
           method: "POST",
         })
-
         const processData = await processRes.json()
         if (!processRes.ok) {
           toast.error(processData.error || "Processing failed")
         } else {
-          toast.success(
-            `Uploaded and processed — ${processData.totalChunks} chunks created`
-          )
+          toast.success(`Done — ${processData.totalChunks} chunks created`)
         }
-        setProcessing(false)
+      } else if (data.document?.status === "completed") {
+        toast.success("Uploaded and processed successfully")
       } else {
-        toast.success("Document uploaded and processed")
+        toast.error(data.error || "Something went wrong")
       }
 
       resetForm()
       router.refresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Upload failed")
+    } finally {
       setUploading(false)
-      setProcessing(false)
     }
   }
 
-  const isSubmitting = uploading || processing
   const canSubmit =
     title.trim() &&
     certId &&
-    ((mode === "file" && file) || (mode === "text" && pastedText.trim()))
+    !uploading &&
+    ((mode === "file" && file) ||
+      (mode === "image" && file) ||
+      (mode === "text" && pastedText.trim()) ||
+      (mode === "youtube" && youtubeUrl.trim()))
 
-  return (
-    <div className="space-y-4">
-      {/* File Drop Zone */}
-      {mode !== "text" && (
-        <Card
-          className={`border-2 border-dashed transition-colors ${
-            dragActive
-              ? "border-primary bg-primary/5"
-              : file
-                ? "border-primary/40 bg-primary/5"
-                : "border-border hover:border-primary/30"
-          }`}
-          onDragEnter={handleDrag}
-          onDragOver={handleDrag}
-          onDragLeave={handleDrag}
-          onDrop={handleDrop}
-        >
-          <CardContent className="flex flex-col items-center justify-center py-10">
-            {file ? (
+  // If a mode is selected, show that input; otherwise show all options
+  if (mode) {
+    return (
+      <div className="space-y-4">
+        {/* Active input */}
+        <Card className="border-primary/40">
+          <CardContent className="py-4">
+            {/* File / Image selected */}
+            {(mode === "file" || mode === "image") && file && (
               <div className="flex items-center gap-3">
-                <FileText className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="font-medium text-foreground">{file.name}</p>
+                {mode === "image" ? (
+                  <ImageIcon className="h-8 w-8 text-primary" />
+                ) : (
+                  <FileText className="h-8 w-8 text-primary" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground truncate">{file.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {(file.size / 1024 / 1024).toFixed(1)} MB
+                    {mode === "image" && " · OCR via Claude Vision"}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => {
-                    setFile(null)
-                    setMode(null)
-                  }}
-                >
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={resetForm}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-            ) : (
-              <>
-                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                  <Upload className="h-6 w-6 text-primary" />
-                </div>
-                <p className="mb-1 text-sm font-medium text-foreground">
-                  Drag & drop your PDF here
-                </p>
-                <p className="mb-3 text-xs text-muted-foreground">
-                  PDF files up to 10MB
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Browse Files
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) selectFile(f)
-                  }}
-                />
-              </>
             )}
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Paste Text Option */}
-      {mode !== "file" && (
-        <Card
-          className={`transition-colors ${
-            mode === "text" ? "border-primary/40" : "hover:border-primary/30 cursor-pointer"
-          }`}
-          onClick={() => {
-            if (mode !== "text") setMode("text")
-          }}
-        >
-          <CardContent className="py-4">
-            {mode === "text" ? (
+            {/* YouTube URL input */}
+            {mode === "youtube" && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Paste Text</Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setPastedText("")
-                      setMode(null)
-                    }}
-                  >
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Video className="h-4 w-4 text-red-500" />
+                    YouTube URL
+                  </Label>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={resetForm}>
+                    Cancel
+                  </Button>
+                </div>
+                <Input
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Transcript will be extracted automatically from captions
+                </p>
+              </div>
+            )}
+
+            {/* Paste text input */}
+            {mode === "text" && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Paste Transcript / Notes</Label>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={resetForm}>
                     Cancel
                   </Button>
                 </div>
                 <Textarea
-                  placeholder="Paste your study notes, transcripts, or any text content..."
+                  placeholder="Paste your video transcript, study notes, or any text content..."
                   value={pastedText}
                   onChange={(e) => setPastedText(e.target.value)}
                   rows={6}
@@ -290,29 +253,15 @@ export function UploadClient({ certifications, defaultCertId }: UploadClientProp
                   </p>
                 )}
               </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Type className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Paste Text</p>
-                  <p className="text-xs text-muted-foreground">
-                    Paste notes or transcripts directly
-                  </p>
-                </div>
-              </div>
             )}
           </CardContent>
         </Card>
-      )}
 
-      {/* Form Fields — shown after content is selected */}
-      {mode && (
+        {/* Form fields */}
         <Card>
           <CardContent className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="doc-title">Document Title</Label>
+              <Label htmlFor="doc-title">Title</Label>
               <Input
                 id="doc-title"
                 value={title}
@@ -337,26 +286,15 @@ export function UploadClient({ certifications, defaultCertId }: UploadClientProp
               </Select>
             </div>
 
-            {/* Upload / Process Status */}
-            {isSubmitting && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {uploading ? "Uploading..." : "Processing document..."}
-                </div>
-                <Progress value={uploading ? 40 : 80} className="h-1.5" />
-              </div>
-            )}
-
-            <Button
-              className="w-full"
-              onClick={handleUpload}
-              disabled={!canSubmit || isSubmitting}
-            >
-              {isSubmitting ? (
+            <Button className="w-full" onClick={handleUpload} disabled={!canSubmit}>
+              {uploading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {uploading ? "Uploading..." : "Processing..."}
+                  {mode === "youtube"
+                    ? "Fetching transcript..."
+                    : mode === "image"
+                      ? "Running OCR..."
+                      : "Processing..."}
                 </>
               ) : (
                 <>
@@ -367,7 +305,95 @@ export function UploadClient({ certifications, defaultCertId }: UploadClientProp
             </Button>
           </CardContent>
         </Card>
-      )}
+      </div>
+    )
+  }
+
+  // No mode selected — show all input options
+  return (
+    <div className="grid gap-3 sm:grid-cols-2"
+      onDragOver={handleDrag}
+      onDrop={handleDrop}
+    >
+      <Card
+        className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm"
+        onClick={() => setMode("youtube")}
+      >
+        <CardContent className="flex items-center gap-4 py-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/10">
+            <Video className="h-5 w-5 text-red-500" />
+          </div>
+          <div>
+            <p className="font-medium text-foreground">YouTube Video</p>
+            <p className="text-xs text-muted-foreground">Extract transcript from captions</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card
+        className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm"
+        onClick={() => setMode("text")}
+      >
+        <CardContent className="flex items-center gap-4 py-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <Type className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-medium text-foreground">Paste Transcript</p>
+            <p className="text-xs text-muted-foreground">Paste notes or video transcripts</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card
+        className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm"
+        onClick={() => imageInputRef.current?.click()}
+      >
+        <CardContent className="flex items-center gap-4 py-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10">
+            <ImageIcon className="h-5 w-5 text-violet-500" />
+          </div>
+          <div>
+            <p className="font-medium text-foreground">Image (OCR)</p>
+            <p className="text-xs text-muted-foreground">Extract text from photos & screenshots</p>
+          </div>
+        </CardContent>
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) selectImage(f)
+          }}
+        />
+      </Card>
+
+      <Card
+        className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <CardContent className="flex items-center gap-4 py-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <FileText className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-medium text-foreground">PDF Document</p>
+            <p className="text-xs text-muted-foreground">Upload study guides & textbooks</p>
+          </div>
+        </CardContent>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) selectFile(f)
+          }}
+        />
+      </Card>
     </div>
   )
 }
