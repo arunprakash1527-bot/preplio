@@ -27,6 +27,16 @@ export default async function DashboardLayout({
 
   const showOnboarding = profile && !profile.onboarding_completed
 
+  // Show full-screen onboarding if not completed — no dashboard behind
+  if (showOnboarding) {
+    return (
+      <OnboardingModal
+        userId={user.id}
+        fullName={profile.full_name}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
@@ -37,12 +47,6 @@ export default async function DashboardLayout({
         </main>
       </div>
       <MobileNav />
-      {showOnboarding && (
-        <OnboardingModal
-          userId={user.id}
-          fullName={profile.full_name}
-        />
-      )}
     </div>
   )
 }
