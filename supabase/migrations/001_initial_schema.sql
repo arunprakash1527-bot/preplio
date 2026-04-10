@@ -37,18 +37,18 @@ CREATE TABLE certification_topics (
   UNIQUE(certification_id, name)
 );
 
--- Seed ORM certification
+-- Seed ORM Designation (2-part professional designation)
 INSERT INTO certifications (id, name, code, provider, description) VALUES (
   'a0000000-0000-0000-0000-000000000001',
-  'Operational Risk Management Designation',
+  'Professional ORM Designation',
   'ORM',
   'PRMIA',
-  'The ORM Designation by PRMIA covers operational risk governance, IT risk, cybersecurity, compliance, and risk frameworks.'
+  'Professional designation for experienced risk professionals. Two-part exam, requires 1 year direct ORM experience + 4 years work/degrees. Earn the right to use the ORM title. Requires 20 CRL credits/year.'
 );
 
 INSERT INTO certification_parts (certification_id, part_number, name, total_questions, duration_minutes, pass_percentage) VALUES
-  ('a0000000-0000-0000-0000-000000000001', 1, 'ORM Part 1', 60, 120, 60.00),
-  ('a0000000-0000-0000-0000-000000000001', 2, 'ORM Part 2', 50, 120, 60.00);
+  ('a0000000-0000-0000-0000-000000000001', 1, 'ORM Designation — Part I', 60, 120, 60.00),
+  ('a0000000-0000-0000-0000-000000000001', 2, 'ORM Designation — Part II', 50, 120, 60.00);
 
 INSERT INTO certification_topics (certification_id, name, exam_weight_percentage, sort_order) VALUES
   ('a0000000-0000-0000-0000-000000000001', 'Operational Risk Governance & Frameworks', 20, 1),
@@ -60,13 +60,13 @@ INSERT INTO certification_topics (certification_id, name, exam_weight_percentage
   ('a0000000-0000-0000-0000-000000000001', 'Financial Crime & Fraud', 10, 7),
   ('a0000000-0000-0000-0000-000000000001', 'Capital Modeling & Reporting', 5, 8);
 
--- Seed ORM Certificate (single-exam credential, distinct from Designation)
+-- Seed ORM Certificate (single-exam, no experience required)
 INSERT INTO certifications (id, name, code, provider, description) VALUES (
   'a0000000-0000-0000-0000-000000000002',
-  'Operational Risk Management Certificate',
+  'ORM Certificate',
   'ORM-CERT',
   'PRMIA',
-  'The ORM Certificate by PRMIA validates foundational knowledge in operational risk management. A single-exam credential.'
+  'Foundational certificate in operational risk management. Single exam (60 questions, 2 hours). No experience required, on-demand scheduling. Not a professional designation.'
 );
 
 INSERT INTO certification_parts (certification_id, part_number, name, total_questions, duration_minutes, pass_percentage) VALUES

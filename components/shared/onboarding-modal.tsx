@@ -20,7 +20,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createClient } from "@/lib/supabase/client"
-import { Award, ChevronRight, ChevronLeft, GraduationCap, BookOpen } from "lucide-react"
+import {
+  Award,
+  ChevronRight,
+  ChevronLeft,
+  GraduationCap,
+  BookOpen,
+  Clock,
+  FileCheck,
+  CheckCircle2,
+} from "lucide-react"
 
 interface OnboardingModalProps {
   userId: string
@@ -38,7 +47,6 @@ interface CertificationOption {
 interface CertificationGroup {
   provider: string
   label: string
-  icon: React.ReactNode
   certifications: CertificationOption[]
 }
 
@@ -55,7 +63,6 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
   const [loadingCerts, setLoadingCerts] = useState(true)
   const router = useRouter()
 
-  // Fetch certifications on mount
   useEffect(() => {
     async function fetchCertifications() {
       const supabase = createClient()
@@ -63,29 +70,31 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
         .from("certifications")
         .select("id, name, code, provider, description")
         .eq("is_active", true)
-        .order("name")
+        .order("code")
 
       if (data && !error) {
-        // Group by provider
-        const grouped = data.reduce<Record<string, CertificationOption[]>>((acc, cert) => {
-          if (!acc[cert.provider]) acc[cert.provider] = []
-          acc[cert.provider].push(cert)
-          return acc
-        }, {})
+        const grouped = data.reduce<Record<string, CertificationOption[]>>(
+          (acc, cert) => {
+            if (!acc[cert.provider]) acc[cert.provider] = []
+            acc[cert.provider].push(cert)
+            return acc
+          },
+          {}
+        )
 
-        const groups: CertificationGroup[] = Object.entries(grouped).map(([provider, certs]) => ({
-          provider,
-          label: getProviderLabel(provider),
-          icon: <Award className="h-6 w-6" />,
-          certifications: certs,
-        }))
+        const groups: CertificationGroup[] = Object.entries(grouped).map(
+          ([provider, certs]) => ({
+            provider,
+            label: getProviderLabel(provider),
+            certifications: certs,
+          })
+        )
 
         setCertGroups(groups)
 
-        // If only one provider, auto-select it
+        // Auto-select if only one provider
         if (groups.length === 1) {
           setSelectedProvider(groups[0].provider)
-          // If only one cert under that provider, auto-select it too
           if (groups[0].certifications.length === 1) {
             setSelectedCertId(groups[0].certifications[0].id)
           }
@@ -98,14 +107,15 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
 
   function getProviderLabel(provider: string): string {
     const labels: Record<string, string> = {
-      PRMIA: "PRMIA — Professional Risk Managers' International Association",
+      PRMIA: "Professional Risk Managers' International Association",
     }
     return labels[provider] || provider
   }
 
   const selectedGroup = certGroups.find((g) => g.provider === selectedProvider)
-  const selectedCert = selectedGroup?.certifications.find((c) => c.id === selectedCertId)
-  const totalSteps = 3
+  const selectedCert = selectedGroup?.certifications.find(
+    (c) => c.id === selectedCertId
+  )
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -138,19 +148,19 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
       >
         <DialogHeader>
           <DialogTitle>
-            {step === 1 && "Choose Your Certification"}
-            {step === 2 && "Select Program"}
+            {step === 1 && "Welcome to Preplio!"}
+            {step === 2 && "Choose Your Program"}
             {step === 3 && "Study Preferences"}
           </DialogTitle>
           <DialogDescription>
-            {step === 1 && "What certification are you preparing for?"}
-            {step === 2 && "Which program would you like to pursue?"}
-            {step === 3 && "Help us personalize your learning experience."}
+            {step === 1 && "Select the certification you're preparing for."}
+            {step === 2 && "Which ORM program are you pursuing?"}
+            {step === 3 && "Help us personalize your learning path."}
           </DialogDescription>
         </DialogHeader>
 
         {/* Step indicator */}
-        <div className="flex items-center justify-center gap-2 py-2">
+        <div className="flex items-center justify-center gap-2 py-1">
           {[1, 2, 3].map((s) => (
             <div
               key={s}
@@ -165,7 +175,7 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
           ))}
         </div>
 
-        {/* Step 1: Select Certification Provider / Program */}
+        {/* Step 1: Select Certification Program */}
         {step === 1 && (
           <div className="space-y-3 pt-2">
             {loadingCerts ? (
@@ -179,7 +189,6 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
                   type="button"
                   onClick={() => {
                     setSelectedProvider(group.provider)
-                    // If only one cert, auto-select and skip to step 3
                     if (group.certifications.length === 1) {
                       setSelectedCertId(group.certifications[0].id)
                       setStep(3)
@@ -187,18 +196,16 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
                       setStep(2)
                     }
                   }}
-                  className={`flex w-full items-center gap-4 rounded-lg border-2 p-4 text-left transition-colors hover:border-primary hover:bg-primary/5 ${
-                    selectedProvider === group.provider
-                      ? "border-primary bg-primary/5"
-                      : "border-border"
-                  }`}
+                  className="flex w-full items-center gap-4 rounded-lg border-2 border-border p-4 text-left transition-colors hover:border-primary hover:bg-primary/5"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    {group.icon}
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Award className="h-6 w-6" />
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold">{group.provider}</p>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold">
+                      {group.provider} — Operational Risk Management
+                    </p>
+                    <p className="text-sm text-muted-foreground truncate">
                       {group.label}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
@@ -206,14 +213,14 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
                       {group.certifications.length !== 1 ? "s" : ""} available
                     </p>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
                 </button>
               ))
             )}
           </div>
         )}
 
-        {/* Step 2: Select Specific Certification */}
+        {/* Step 2: Select Certificate vs Designation */}
         {step === 2 && selectedGroup && (
           <div className="space-y-3 pt-2">
             {selectedGroup.certifications.map((cert) => {
@@ -226,33 +233,64 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
                     setSelectedCertId(cert.id)
                     setStep(3)
                   }}
-                  className={`flex w-full items-center gap-4 rounded-lg border-2 p-4 text-left transition-colors hover:border-primary hover:bg-primary/5 ${
-                    selectedCertId === cert.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border"
-                  }`}
+                  className="flex w-full flex-col rounded-lg border-2 border-border p-4 text-left transition-colors hover:border-primary hover:bg-primary/5"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    {isDesignation ? (
-                      <GraduationCap className="h-6 w-6" />
-                    ) : (
-                      <BookOpen className="h-6 w-6" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold">{cert.name}</p>
-                      {isDesignation && (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                          Advanced
-                        </span>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary mt-0.5">
+                      {isDesignation ? (
+                        <GraduationCap className="h-5 w-5" />
+                      ) : (
+                        <BookOpen className="h-5 w-5" />
                       )}
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {cert.description}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold">{cert.name}</p>
+                        {isDesignation && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                            Professional Title
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+                        {cert.description}
+                      </p>
+                    </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+
+                  {/* Key facts */}
+                  <div className="mt-3 ml-13 flex flex-wrap gap-x-4 gap-y-1.5 pl-[52px]">
+                    {isDesignation ? (
+                      <>
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <FileCheck className="h-3.5 w-3.5" />2 exams (Part I
+                          + Part II)
+                        </span>
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Clock className="h-3.5 w-3.5" />
+                          110 questions, 4 hrs total
+                        </span>
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Experience required
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <FileCheck className="h-3.5 w-3.5" />1 exam
+                        </span>
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Clock className="h-3.5 w-3.5" />
+                          60 questions, 2 hrs
+                        </span>
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          No experience required
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </button>
               )
             })}
@@ -274,12 +312,20 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
         {/* Step 3: Study Preferences */}
         {step === 3 && (
           <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-            {/* Show selected certification */}
+            {/* Selected certification summary */}
             {selectedCert && (
-              <div className="flex items-center gap-3 rounded-lg bg-primary/5 p-3">
-                <Award className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-sm font-medium">{selectedCert.name}</p>
+              <div className="flex items-center gap-3 rounded-lg bg-primary/5 border border-primary/20 p-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  {selectedCert.code === "ORM" ? (
+                    <GraduationCap className="h-4 w-4" />
+                  ) : (
+                    <BookOpen className="h-4 w-4" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {selectedCert.name}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {selectedCert.provider}
                   </p>
@@ -288,9 +334,12 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="ml-auto text-xs"
+                  className="shrink-0 text-xs"
                   onClick={() => {
-                    if (selectedGroup && selectedGroup.certifications.length > 1) {
+                    if (
+                      selectedGroup &&
+                      selectedGroup.certifications.length > 1
+                    ) {
                       setStep(2)
                     } else {
                       setStep(1)
@@ -350,10 +399,14 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None — completely new</SelectItem>
-                  <SelectItem value="some">Some — familiar with basics</SelectItem>
+                  <SelectItem value="none">
+                    None — completely new to risk management
+                  </SelectItem>
+                  <SelectItem value="some">
+                    Some — familiar with basic concepts
+                  </SelectItem>
                   <SelectItem value="experienced">
-                    Experienced — working in the field
+                    Experienced — working in risk/compliance
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -365,7 +418,10 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
                 variant="outline"
                 className="flex-1"
                 onClick={() => {
-                  if (selectedGroup && selectedGroup.certifications.length > 1) {
+                  if (
+                    selectedGroup &&
+                    selectedGroup.certifications.length > 1
+                  ) {
                     setStep(2)
                   } else {
                     setStep(1)
@@ -375,7 +431,11 @@ export function OnboardingModal({ userId, fullName }: OnboardingModalProps) {
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <Button type="submit" className="flex-1" disabled={loading || !selectedCertId}>
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={loading || !selectedCertId}
+              >
                 {loading ? "Saving..." : "Get Started"}
               </Button>
             </div>
