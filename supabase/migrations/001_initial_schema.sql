@@ -60,6 +60,28 @@ INSERT INTO certification_topics (certification_id, name, exam_weight_percentage
   ('a0000000-0000-0000-0000-000000000001', 'Financial Crime & Fraud', 10, 7),
   ('a0000000-0000-0000-0000-000000000001', 'Capital Modeling & Reporting', 5, 8);
 
+-- Seed ORM Certificate (single-exam credential, distinct from Designation)
+INSERT INTO certifications (id, name, code, provider, description) VALUES (
+  'a0000000-0000-0000-0000-000000000002',
+  'Operational Risk Management Certificate',
+  'ORM-CERT',
+  'PRMIA',
+  'The ORM Certificate by PRMIA validates foundational knowledge in operational risk management. A single-exam credential.'
+);
+
+INSERT INTO certification_parts (certification_id, part_number, name, total_questions, duration_minutes, pass_percentage) VALUES
+  ('a0000000-0000-0000-0000-000000000002', 1, 'ORM Certificate Exam', 60, 120, 60.00);
+
+INSERT INTO certification_topics (certification_id, name, exam_weight_percentage, sort_order) VALUES
+  ('a0000000-0000-0000-0000-000000000002', 'Operational Risk Governance & Frameworks', 20, 1),
+  ('a0000000-0000-0000-0000-000000000002', 'IT Risk & Cybersecurity', 15, 2),
+  ('a0000000-0000-0000-0000-000000000002', 'Risk Assessment & Measurement', 15, 3),
+  ('a0000000-0000-0000-0000-000000000002', 'Compliance & Regulatory Requirements', 15, 4),
+  ('a0000000-0000-0000-0000-000000000002', 'Business Continuity & Resilience', 10, 5),
+  ('a0000000-0000-0000-0000-000000000002', 'Supply Chain & Third-Party Risk', 10, 6),
+  ('a0000000-0000-0000-0000-000000000002', 'Financial Crime & Fraud', 10, 7),
+  ('a0000000-0000-0000-0000-000000000002', 'Capital Modeling & Reporting', 5, 8);
+
 -- ============================================
 -- Profiles (extends Supabase auth.users)
 -- ============================================
@@ -301,16 +323,15 @@ CREATE POLICY "Users manage own messages" ON chat_messages FOR ALL USING (
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, email, full_name, certification_id)
+  INSERT INTO profiles (id, email, full_name)
   VALUES (
     NEW.id,
     NEW.email,
-    NEW.raw_user_meta_data->>'full_name',
-    'a0000000-0000-0000-0000-000000000001'  -- Default to ORM cert
+    COALESCE(NEW.raw_user_meta_data->>'full_name', '')
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users

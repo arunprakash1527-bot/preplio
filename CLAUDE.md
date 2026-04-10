@@ -8,7 +8,7 @@ AI-powered certification coaching web app. Transforms uploaded study materials i
 ---
 
 ## Tech Stack
-- **Framework:** Next.js 15 (App Router, TypeScript, strict mode)
+- **Framework:** Next.js 16 (App Router, TypeScript, strict mode)
 - **Styling:** Tailwind CSS + shadcn/ui (New York style)
 - **Database:** Supabase (PostgreSQL + pgvector + Auth + Storage)
 - **AI:** Anthropic Claude API (claude-sonnet-4-5-20250514)
@@ -53,7 +53,7 @@ AI-powered certification coaching web app. Transforms uploaded study materials i
 |-------|--------|-------------|
 | Phase 0 | COMPLETE | Pre-build setup (CLAUDE.md, git, GitHub, memories) |
 | Phase 1 | COMPLETE | Project scaffolding, theme, layout, placeholder pages |
-| Phase 2 | NOT STARTED | Supabase database schema, auth, profile onboarding |
+| Phase 2 | COMPLETE | Supabase database schema, auth, profile onboarding |
 | Phase 3 | NOT STARTED | Admin upload, document processing, OCR, embeddings |
 | Phase 4 | NOT STARTED | AI question generation, quiz interface, spaced repetition |
 | Phase 5 | NOT STARTED | RAG-powered AI chat tutor with citations |
